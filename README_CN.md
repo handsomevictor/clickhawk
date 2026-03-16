@@ -295,6 +295,23 @@ pytest
 
 ---
 
+## 文档索引
+
+| 文档 | 说明 |
+|------|------|
+| [TUTORIAL_CN.md](TUTORIAL_CN.md) | 本地 ClickHouse 安装教程（macOS / Linux / Windows），含完整配置和常见报错解决 |
+| [CHANGELOG_CN.md](CHANGELOG_CN.md) | 版本历史和发布说明 |
+| [LESSONS_LEARNED_CN.md](LESSONS_LEARNED_CN.md) | 开发过程中踩过的坑，供贡献者参考 |
+| [STRUCTURE_CN.md](STRUCTURE_CN.md) | 项目目录结构和模块职责说明 |
+| [examples/BASIC_QUERY_CN.md](examples/BASIC_QUERY_CN.md) | `ch query` 使用示例 |
+| [examples/PROFILING_CN.md](examples/PROFILING_CN.md) | `ch profile` — 如何读懂指标、诊断慢查询 |
+| [examples/MONITORING_CN.md](examples/MONITORING_CN.md) | `ch monitor` + `ch slowlog` — 生产故障排查流程 |
+| [examples/SCHEMA_EXPLORATION_CN.md](examples/SCHEMA_EXPLORATION_CN.md) | `ch schema` — 表结构检查和 schema 工作流 |
+
+> 所有文档均有英文和中文两个版本。英文版去掉文件名中的 `_CN` 即可（例如 `TUTORIAL.md`）。
+
+---
+
 ## 贡献
 
 欢迎 PR 和 Issue！
