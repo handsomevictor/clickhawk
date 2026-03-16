@@ -403,6 +403,58 @@ Watch terminal 1 for the query to appear in `ch monitor`. Press `Ctrl+C` to exit
 
 ---
 
+### EXPLAIN plan (v0.2+)
+
+```bash
+ch explain 'SELECT uniq(user_id) FROM demo.events WHERE date = today()'
+```
+
+Renders the query plan as a color-coded tree.
+
+---
+
+### Data quality checks (v0.2+)
+
+```bash
+# Null percentage per column (sample 100k rows for speed)
+ch check nulls events --database demo --sample 100000
+
+# Cardinality per column
+ch check cardinality events --database demo --sample 100000
+```
+
+---
+
+### Export data (v0.2+)
+
+```bash
+# Export to CSV (format auto-detected from extension)
+ch export 'SELECT * FROM demo.events LIMIT 1000' --output events_sample.csv
+
+# Export to JSON
+ch export 'SELECT event_type, count() AS cnt FROM demo.events GROUP BY event_type' --output counts.json
+```
+
+---
+
+### Schema migrations (v0.2+)
+
+Create a `migrations/` directory with numbered `.sql` files:
+
+```bash
+mkdir migrations
+echo "CREATE TABLE demo.my_feature (id UInt64, val String) ENGINE = Log;" > migrations/001_my_feature.sql
+```
+
+Then apply:
+
+```bash
+ch migrate status --dir migrations/   # see what's pending
+ch migrate run    --dir migrations/   # apply
+```
+
+---
+
 ## Common Error Quick Reference
 
 | Error | Cause | Fix |

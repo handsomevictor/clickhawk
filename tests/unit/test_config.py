@@ -3,8 +3,11 @@ import pytest
 from clickhawk.core.config import ClickHouseConfig
 
 
-def test_default_values():
-    cfg = ClickHouseConfig()
+def test_default_values(monkeypatch):
+    # Clear any CH_ env vars so .env overrides don't interfere
+    for key in ["CH_HOST", "CH_PORT", "CH_USER", "CH_PASSWORD", "CH_DATABASE", "CH_SECURE"]:
+        monkeypatch.delenv(key, raising=False)
+    cfg = ClickHouseConfig(_env_file=None)  # type: ignore[call-arg]
     assert cfg.host == "localhost"
     assert cfg.port == 8123
     assert cfg.user == "default"

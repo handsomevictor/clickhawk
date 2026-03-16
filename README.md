@@ -232,6 +232,89 @@ Displays running queries from `system.processes` in real time. Queries running l
 
 ---
 
+### `ch explain` — Colorized EXPLAIN Tree
+
+```bash
+ch explain "SELECT uniq(user_id) FROM events WHERE date >= today() - 7"
+
+# Show pipeline instead of plan
+ch explain "SELECT count() FROM events" --kind pipeline
+
+# Show raw syntax
+ch explain "select count() from events" --kind syntax
+```
+
+Renders the EXPLAIN output as a color-coded tree — `ReadFromMergeTree` in cyan, `Filter` in yellow, `Aggregating` in magenta, and so on — making query plans readable at a glance.
+
+---
+
+### `ch schema diff` — Compare Schemas Across Environments
+
+```bash
+ch schema diff events --host2 staging.internal --database analytics
+```
+
+Compares a table's column list and types between two ClickHouse hosts. Added columns shown in green, removed in red, type changes in yellow.
+
+---
+
+### `ch migrate` — Schema Migration Management
+
+```bash
+# Show migration status
+ch migrate status --dir migrations/
+
+# Apply pending migrations (preview first)
+ch migrate run --dir migrations/ --dry-run
+ch migrate run --dir migrations/
+```
+
+Applies `.sql` files from a directory in alphabetical order. Tracks applied migrations in a `_clickhawk_migrations` table so runs are idempotent.
+
+---
+
+### `ch check nulls` — Null Percentage per Column
+
+```bash
+ch check nulls events --database analytics
+
+# Sample 500k rows instead of the default 1M
+ch check nulls large_table --sample 500000
+```
+
+Shows null count and null percentage for every column. Highlights columns above 10 % (yellow) and 50 % (red).
+
+---
+
+### `ch check cardinality` — Unique Value Count per Column
+
+```bash
+ch check cardinality events --database analytics
+```
+
+Reports approximate cardinality for each column, sorted from highest to lowest. Columns with < 1 % cardinality are flagged as candidates for `LowCardinality`; columns above 95 % are flagged for potential skip indexes.
+
+---
+
+### `ch export` — Export to CSV / JSON / Parquet
+
+```bash
+# Auto-detect format from file extension
+ch export "SELECT * FROM events WHERE date = today()" --output today.csv
+ch export "SELECT * FROM events" --output snapshot.parquet  # requires: pip install pyarrow
+
+# Export a whole table by name (bare name → SELECT *)
+ch export events --output events.json --limit 10000
+```
+
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--output` | `-o` | required | Output file path |
+| `--format` | `-f` | auto | Format: `csv` / `json` / `parquet` |
+| `--limit` | `-l` | none | Max rows to export |
+
+---
+
 ## Configuration
 
 ClickHawk is configured via environment variables or a `.env` file (backed by Pydantic Settings, with priority-based override support):
@@ -286,12 +369,15 @@ pytest
 
 | Version | Feature | Status |
 |---------|---------|--------|
-| **v0.1** | `query` / `profile` / `slowlog` / `schema` / `monitor` / `health` | Released |
-| **v0.2** | `ch explain` — colored tree-style EXPLAIN output | Planned |
-| **v0.2** | `ch schema diff` — schema comparison across environments | Planned |
-| **v0.2** | `ch migrate` — schema migration management | Planned |
-| **v0.3** | `ch check nulls/cardinality` — data quality scanning | Backlog |
-| **v0.3** | `ch export` — export to Parquet / CSV / JSON / S3 | Backlog |
+| **v0.1** | `query` / `profile` / `slowlog` / `schema` / `monitor` / `health` | ✅ Released |
+| **v0.2** | `ch explain` — colorized tree-style EXPLAIN output | ✅ Released |
+| **v0.2** | `ch schema diff` — schema comparison across environments | ✅ Released |
+| **v0.2** | `ch migrate run/status` — file-based schema migration management | ✅ Released |
+| **v0.2** | `ch check nulls/cardinality` — data quality scanning | ✅ Released |
+| **v0.2** | `ch export` — export to CSV / JSON / Parquet | ✅ Released |
+| **v0.3** | `ch kill <query_id>` — terminate a running query from the terminal | Planned |
+| **v0.3** | `ch export --s3` — stream results directly to S3 | Planned |
+| **v0.3** | `ch top` — top queries by CPU / memory / rows read (like `htop` for ClickHouse) | Planned |
 
 ---
 

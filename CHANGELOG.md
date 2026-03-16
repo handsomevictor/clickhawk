@@ -6,10 +6,28 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
+---
+
+## [0.2.0] — 2026-03-17
+
+### Added
+- **`ch explain <sql>`** — colorized tree-style EXPLAIN PLAN / PIPELINE / SYNTAX output powered by Rich `Tree`; node types (Filter, Aggregating, ReadFromMergeTree, …) are color-coded for readability
+- **`ch schema diff`** — compare a table's schema between two ClickHouse environments; outputs added columns (green), removed columns (red), and type changes (yellow)
+- **`ch migrate run`** — apply pending `.sql` migration files from a directory in alphabetical order; tracks applied migrations in a `_clickhawk_migrations` table; supports `--dry-run`
+- **`ch migrate status`** — display which migrations are applied, pending, or missing from disk
+- **`ch check nulls <table>`** — scan a table (with configurable `--sample` size) and report null percentage per column; highlights columns above 10 % (yellow) and 50 % (red)
+- **`ch check cardinality <table>`** — report approximate unique-value count per column with verdict labels (low/medium/high); helps identify candidates for `LowCardinality` or skip indexes
+- **`ch export <sql>`** — export query results to CSV, JSON, or Parquet; format auto-detected from the output file extension (`--output out.parquet`); Parquet requires `pip install pyarrow`
+
+### Technical
+- New command modules: `explain.py`, `check.py`, `export.py`; `migrate.py` fully rewritten
+- `schema.py` extended with `diff` sub-command
+- All new commands registered in `main.py`
+- Integration test coverage added for all new commands (64 tests total)
+
 ### Planned
-- `ch explain` — colorized tree-style EXPLAIN PLAN output
-- `ch schema diff` — compare schema differences between two ClickHouse environments
-- `ch migrate run/status` — file-based schema migration management
+- `ch kill <query_id>` — terminate a running query from the terminal
+- `ch export … --s3` — stream results directly to S3
 
 ---
 
