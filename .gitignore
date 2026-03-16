@@ -1,9 +1,50 @@
+# Python
 __pycache__/
 *.py[cod]
-.venv/
-dist/
+*.pyo
+*.pyd
+*.so
+*.egg
 *.egg-info/
+dist/
+build/
+wheels/
+sdist/
+.eggs/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# 环境配置（含敏感信息）
 .env
+.env.local
+.env.*.local
+
+# 类型检查 / linter / 测试缓存
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# 编辑器
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ClickHouse 本地数据（tutorial.md 中创建的本地测试目录）
+clickhouse-data/
+clickhouse-config.xml
+/tmp/clickhouse.log
+
+# 日志
+*.log
+
+# pyproject 构建产物
+*.whl

@@ -38,7 +38,7 @@ dev = [
 ch = "clickhawk.main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/clickhawk"]
+packages = ["clickhawk"]
 
 [tool.ruff]
 line-length = 100
