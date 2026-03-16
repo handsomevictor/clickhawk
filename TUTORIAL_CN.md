@@ -252,9 +252,16 @@ ch --help
 ## 第四步：配置连接
 
 ```bash
-# 复制配置模板（默认 localhost:8123，本地无需修改）
+# 复制配置模板，然后将 CH_DATABASE 改为第二步创建的 demo 数据库
 cp .env.example .env
 ```
+
+编辑 `.env`，设置：
+```env
+CH_DATABASE=demo
+```
+
+> **注意：** 第二步创建的测试数据库名为 `demo`。如果 `CH_DATABASE` 保持默认的 `default`，所有表名都需要加前缀（如 `demo.events`）。设置 `CH_DATABASE=demo` 后可以省略前缀。
 
 或者直接导出环境变量：
 
@@ -263,7 +270,7 @@ export CH_HOST=localhost
 export CH_PORT=8123
 export CH_USER=default
 export CH_PASSWORD=
-export CH_DATABASE=default
+export CH_DATABASE=demo   # 第二步创建的测试数据库
 ```
 
 ---

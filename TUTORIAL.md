@@ -255,9 +255,16 @@ See [README](README.md) for the full command reference.
 ## Step 4: Configure the Connection
 
 ```bash
-# Copy the config template (defaults to localhost:8123 — no changes needed for local setup)
+# Copy the config template, then set CH_DATABASE=demo to match the test database from Step 2
 cp .env.example .env
 ```
+
+Then edit `.env` and set:
+```env
+CH_DATABASE=demo
+```
+
+> **Important:** The test database created in Step 2 is named `demo`. If `CH_DATABASE` stays as `default`, you must prefix all table names with `demo.` (e.g., `demo.events`). Setting `CH_DATABASE=demo` lets you omit the prefix.
 
 Or export environment variables directly:
 
@@ -266,7 +273,7 @@ export CH_HOST=localhost
 export CH_PORT=8123
 export CH_USER=default
 export CH_PASSWORD=
-export CH_DATABASE=default
+export CH_DATABASE=demo   # set to the demo database created in Step 2
 ```
 
 ---
