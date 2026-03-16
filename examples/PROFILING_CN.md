@@ -1,3 +1,5 @@
+> English version: [PROFILING.md](PROFILING.md)
+
 # 示例：查询性能分析
 
 ## 场景：诊断一条慢查询

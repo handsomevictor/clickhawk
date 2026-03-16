@@ -1,3 +1,5 @@
+> English version: [LESSONS_LEARNED.md](LESSONS_LEARNED.md)
+
 # 调试经验记录（Lessons Learned）
 
 开发 ClickHawk 过程中踩过的坑和学到的经验，供后续开发和贡献者参考。
@@ -25,6 +27,9 @@ xattr -d com.apple.quarantine $(which clickhouse)
 ```bash
 clickhouse server --config-file=$HOME/clickhouse-config.xml &
 ```
+
+**`ch slowlog` / `ch profile` 报 `Unknown table 'system.query_log'`**
+config.xml 缺少 `<query_log>` 配置时，ClickHouse 不会创建 `system.query_log` 表（懒加载），导致 slowlog 和 profile 命令报错。解决方案：在 config.xml 中加入 `<query_log>` 节点并在 default profile 中设置 `<log_queries>1</log_queries>`。
 
 **最小可用 config.xml 必须包含 profiles/users/quotas**，否则会报 `Settings profile 'default' not found`（exit 180）。仅有路径和端口配置不够，ClickHouse 启动时会查找 `default` profile：
 ```xml
@@ -60,7 +65,24 @@ clickhouse server --config-file=$HOME/clickhouse-config.xml &
 
 ---
 
-## 2. ClickHouse 26.x 在 macOS ARM64 上无配置文件启动崩溃
+## 2. Typer 0.12+ 子 app 中选项不能放在位置参数之后
+
+**问题描述：**
+`ch query 'SELECT ...' --format json` 报 `Missing argument 'SQL'`，而 `ch query --format json 'SELECT ...'` 正常。
+
+**根本原因：**
+Typer 0.12+ 使用 `add_typer()` 嵌套子 app 时，子 app 的 callback 默认不允许选项（`--format`）出现在位置参数（SQL）之后，与用户直觉相反。
+
+**解决方案：**
+在每个有位置参数 + 选项组合的子 app 上加 `context_settings={"allow_interspersed_args": True}`：
+```python
+app = typer.Typer(help="...", context_settings={"allow_interspersed_args": True})
+```
+受影响的命令：`query`、`profile`、`slowlog`、`monitor`。
+
+---
+
+## 3. ClickHouse 26.x 在 macOS ARM64 上无配置文件启动崩溃
 
 **问题描述：**
 在 macOS Apple Silicon 上执行 `./clickhouse server &`，服务端立即 crash 并 exit 91，错误信息为：

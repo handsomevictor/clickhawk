@@ -1,3 +1,5 @@
+> English version: [MONITORING.md](MONITORING.md)
+
 # 示例：实时监控与慢查询排查
 
 ## 1. 实时查询监控

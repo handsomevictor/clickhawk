@@ -1,3 +1,5 @@
+> English version: [STRUCTURE.md](STRUCTURE.md)
+
 # 项目结构说明
 
 ```
@@ -37,10 +39,14 @@ clickhawk/
 │       └── __init__.py
 │
 ├── examples/                     # 使用示例
-│   ├── basic_query.md            # 基础查询示例
-│   ├── profiling.md              # 性能分析示例
-│   ├── schema_exploration.md     # Schema 探索示例
-│   └── monitoring.md             # 实时监控示例
+│   ├── BASIC_QUERY.md            # 基础查询示例（英文）
+│   ├── BASIC_QUERY_CN.md         # 基础查询示例（中文）
+│   ├── PROFILING.md              # 性能分析示例（英文）
+│   ├── PROFILING_CN.md           # 性能分析示例（中文）
+│   ├── SCHEMA_EXPLORATION.md     # Schema 探索示例（英文）
+│   ├── SCHEMA_EXPLORATION_CN.md  # Schema 探索示例（中文）
+│   ├── MONITORING.md             # 实时监控示例（英文）
+│   └── MONITORING_CN.md          # 实时监控示例（中文）
 │
 ├── pyproject.toml                # 项目元数据、依赖、构建配置
 ├── .env.example                  # 环境变量配置模板
@@ -48,8 +54,8 @@ clickhawk/
 ├── .gitattributes
 ├── README.md                     # 项目主文档
 ├── CHANGELOG.md                  # 版本更新记录
-├── structure.md                  # 本文件：项目结构说明
-└── lessons_learned.md            # 开发调试经验记录
+├── STRUCTURE.md                  # 项目结构说明（英文版）
+└── LESSONS_LEARNED.md            # 开发调试经验记录
 ```
 
 ---

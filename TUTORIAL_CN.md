@@ -1,3 +1,5 @@
+> English version: [TUTORIAL.md](TUTORIAL.md)
+
 # 本地快速上手教程
 
 本教程带你在本地安装 ClickHouse、创建测试数据库，然后用 ClickHawk 验证所有功能。
@@ -19,8 +21,10 @@
 
 > **为什么不用 `./clickhouse server` 直接启动？**
 > ClickHouse 26.x 在 macOS ARM64 上以无配置文件模式运行时存在已知 bug，会立即 crash（exit 91）。
+>
 > **为什么不用 `brew services start clickhouse`？**
 > `brew tap clickhouse/clickhouse` 安装的是单文件二进制，没有注册 launchd service，`brew services` 无法管理它。
+>
 > 正确方式是提供完整 config.xml 手动启动，见下方。
 
 **1. 安装**
@@ -42,8 +46,9 @@ xattr -d com.apple.quarantine $(which clickhouse)
 **3. 创建完整配置文件并启动**
 
 > **为什么需要完整的 config.xml？**
-> 仅含路径和端口的最小配置会导致 ClickHouse 以 exit 180 崩溃（`Settings profile 'default' not found`）。
-> config.xml 必须包含 `<profiles>`、`<users>`、`<quotas>` 三个节点。
+> - 仅含路径和端口 → exit 180（`Settings profile 'default' not found`），必须包含 `<profiles>`、`<users>`、`<quotas>`
+> - 缺少 `<query_log>` → `ch profile` 和 `ch slowlog` 报 `Unknown table 'system.query_log'`
+> - 缺少 `<log_queries>1</log_queries>` → query_log 表存在但没有数据
 
 ```bash
 mkdir -p ~/clickhouse-data/{data,tmp}
@@ -56,9 +61,16 @@ cat > ~/clickhouse-config.xml << 'EOF'
     <http_port>8123</http_port>
     <listen_host>127.0.0.1</listen_host>
 
+    <query_log>
+        <database>system</database>
+        <table>query_log</table>
+        <flush_interval_milliseconds>200</flush_interval_milliseconds>
+    </query_log>
+
     <profiles>
         <default>
             <max_memory_usage>10000000000</max_memory_usage>
+            <log_queries>1</log_queries>
         </default>
     </profiles>
 
@@ -101,7 +113,7 @@ curl http://localhost:8123/ping   # 返回 Ok. 说明成功
 如果没有返回，检查日志：
 
 ```bash
-cat /tmp/clickhouse.log | tail -20
+tail -20 /tmp/clickhouse.log
 ```
 
 **5. 连接客户端**
@@ -258,6 +270,10 @@ export CH_DATABASE=default
 
 ## 第五步：验证所有功能
 
+> **注意：** 从文档复制命令时，建议每条单独粘贴执行，不要一次粘贴多行。SQL 中使用单引号 `'` 包裹，避免引号在复制过程中变形。
+
+---
+
 ### ✅ 健康检查
 
 ```bash
@@ -274,37 +290,68 @@ ch health
 
 ---
 
-### ✅ 执行查询
+### ✅ 执行查询（表格格式）
 
 ```bash
-ch query "SELECT event_type, count() AS cnt FROM demo.events GROUP BY event_type ORDER BY cnt DESC"
+ch query 'SELECT event_type, count() AS cnt FROM demo.events GROUP BY event_type ORDER BY cnt DESC'
 ```
 
 ---
 
-### ✅ JSON / CSV 输出
+### ✅ JSON 格式输出
 
 ```bash
-ch query "SELECT event_type, count() AS cnt FROM demo.events GROUP BY event_type" --format json
-ch query "SELECT user_id, count() AS cnt FROM demo.events GROUP BY user_id LIMIT 5" --format csv
+ch query 'SELECT event_type, count() AS cnt FROM demo.events GROUP BY event_type' --format json
+```
+
+---
+
+### ✅ CSV 格式输出
+
+```bash
+ch query 'SELECT user_id, count() AS cnt FROM demo.events GROUP BY user_id LIMIT 5' --format csv
 ```
 
 ---
 
 ### ✅ 性能分析
 
+> **注意：** `ch profile` 依赖 `system.query_log`。需要先执行一条普通查询让该表完成初始化，再运行 profile。
+
 ```bash
-ch profile "SELECT uniq(user_id) FROM demo.events WHERE date = today()"
+# 第一步：先执行一条普通查询（让 query_log 完成初始化）
+ch query 'SELECT count() FROM demo.events'
+
+# 第二步：等待 query_log 写入（约 1 秒）
+sleep 1
+
+# 第三步：profile
+ch profile 'SELECT uniq(user_id) FROM demo.events WHERE date = today()'
 ```
 
-> 本地数据量小，指标数值会很小，这是正常的。详细的性能分析解读见 [examples/profiling.md](examples/profiling.md)。
+**预期输出：**
+```
+🔍 Query Profile
+┌──────────────────────┬──────────────┐
+│ Metric               │ Value        │
+├──────────────────────┼──────────────┤
+│ Wall time            │ 0.00Xs       │
+│ DB duration          │ X ms         │
+│ Rows read            │ XXX          │
+│ Bytes read           │ X.XX MB      │
+│ Memory used          │ X.XX MB      │
+│ Parts selected       │ X            │
+│ Ranges selected      │ X            │
+└──────────────────────┴──────────────┘
+```
+
+> 本地数据量小，数值很小是正常的。详细指标解读见 [examples/PROFILING.md](examples/PROFILING.md)。
 
 ---
 
 ### ✅ 慢查询历史
 
 ```bash
-# 阈值调低，本地测试也能看到记录
 ch slowlog --threshold 1 --hours 1 --top 10
 ```
 
@@ -314,6 +361,9 @@ ch slowlog --threshold 1 --hours 1 --top 10
 
 ```bash
 ch schema tables --database demo
+```
+
+```bash
 ch schema show events --database demo
 ```
 
@@ -321,21 +371,25 @@ ch schema show events --database demo
 
 ### ✅ 实时监控
 
+在终端 1 启动监控：
+
 ```bash
 ch monitor
 ```
 
-在另一个终端制造一个耗时查询：
+在终端 2 制造一个耗时查询（让监控有内容可看）：
 
 ```bash
 # macOS / Linux（Homebrew 安装）
-clickhouse client --query "SELECT sleep(10)"
+clickhouse client --query 'SELECT sleep(3)'
 
 # Docker
-docker exec -it clickhouse-local clickhouse-client --query "SELECT sleep(10)"
+docker exec -it clickhouse-local clickhouse-client --query 'SELECT sleep(3)'
 ```
 
-观察 `ch monitor` 中出现该查询。按 `Ctrl+C` 退出。更多监控场景见 [examples/monitoring.md](examples/monitoring.md)。
+> **注意：** ClickHouse 限制最大 sleep 时间为 3 秒，`SELECT sleep(10)` 会报 `TOO_SLOW` 错误。
+
+观察终端 1 中 `ch monitor` 出现该查询条目。按 `Ctrl+C` 退出监控。更多场景见 [examples/MONITORING.md](examples/MONITORING.md)。
 
 ---
 
@@ -348,7 +402,10 @@ docker exec -it clickhouse-local clickhouse-client --query "SELECT sleep(10)"
 | `brew services start clickhouse` → No available formula | tap 安装的是二进制，没有 launchd service | 改用 `clickhouse server --config-file=...` 手动启动 |
 | `clickhouse server &` crash exit 91 | ClickHouse 26.x macOS ARM64 embedded config bug | 必须提供 `--config-file`，见第一步 |
 | `clickhouse server` crash exit 180 / `Settings profile 'default' not found` | config.xml 缺少 profiles/users/quotas | 使用上方完整的 config.xml 模板 |
+| `ch profile` / `ch slowlog` → `Unknown table 'system.query_log'` | config.xml 缺少 `<query_log>` 配置 | 使用上方完整的 config.xml 模板（含 query_log 节点） |
+| `ch profile` → Stats not yet available | query_log 尚未初始化或写入延迟 | 先执行一条普通查询，等 1 秒再 profile |
+| `SELECT sleep(10)` → TOO_SLOW | ClickHouse 限制最大 sleep 为 3 秒 | 改用 `SELECT sleep(3)` |
+| `ch query 'SQL' --format json` → Missing argument 'SQL' | 从文档复制时引号变形，或多行一起粘贴 | 每条命令单独执行，用单引号 `'` 包裹 SQL |
 | `ch health` → Connection refused | 服务端未启动或端口错误 | `curl http://localhost:8123/ping` 确认服务状态 |
-| `ch profile` → Stats not yet available | `query_log` 异步写入延迟 | 稍等片刻重试；详见 [lessons_learned.md](lessons_learned.md) |
 | `pip install -e ".[dev]"` 报错 | 目录不对 | 确认在有 `pyproject.toml` 的项目根目录执行 |
 | Windows 上 `ch` 命令找不到 | Python Scripts 不在 PATH | `python -c "import sysconfig; print(sysconfig.get_path('scripts'))"` 找到路径后加入 PATH |

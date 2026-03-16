@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.live import Live
 from rich.table import Table
 
-app = typer.Typer(help="Live query monitoring dashboard.")
+app = typer.Typer(help="Live query monitoring dashboard.", context_settings={"allow_interspersed_args": True})
 console = Console()
 
 

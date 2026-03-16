@@ -1,3 +1,5 @@
+> English version: [SCHEMA_EXPLORATION.md](SCHEMA_EXPLORATION.md)
+
 # 示例：Schema 探索
 
 ## 1. 列出所有用户表

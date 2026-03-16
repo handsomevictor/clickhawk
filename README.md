@@ -1,6 +1,8 @@
-# 🦅 ClickHawk
+# ClickHawk
 
-> ClickHouse 数据工程师的命令行瑞士军刀 — 查询、诊断、监控、探索，一个命令搞定。
+> 中文版文档: [README_CN.md](README_CN.md)
+
+> The command-line Swiss Army knife for ClickHouse data engineers — query, diagnose, monitor, and explore, all in one command.
 
 [![PyPI version](https://badge.fury.io/py/clickhawk.svg)](https://pypi.org/project/clickhawk/)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/)
@@ -10,49 +12,49 @@
 
 ---
 
-## 为什么需要 ClickHawk？
+## Why ClickHawk?
 
-ClickHouse 生态里有很多工具，但没有一个能解决数据工程师日常工作中的真实痛点：
+The ClickHouse ecosystem has many tools, but none of them address the real pain points data engineers face in daily work:
 
-- 调试慢查询？要手写 `SELECT * FROM system.query_log WHERE ...` 看一堆裸文本
-- 查看当前运行查询？要登录 `clickhouse-client` 再执行 `SELECT * FROM system.processes`
-- 分析 EXPLAIN 输出？纯文本 tree，没有颜色和层次感，几乎无法阅读
-- 查表结构？切换到 DBeaver/DataGrip，又慢又重
-- 不同环境 schema 对比？没有工具，只能手动
+- Debugging slow queries? You have to hand-write `SELECT * FROM system.query_log WHERE ...` and wade through raw text output.
+- Checking currently running queries? You have to log into `clickhouse-client` and run `SELECT * FROM system.processes`.
+- Analyzing EXPLAIN output? It's plain-text tree output with no colors or hierarchy — nearly unreadable.
+- Inspecting table schemas? You switch to DBeaver/DataGrip, which is slow and heavyweight.
+- Comparing schemas across environments? No tool exists; you do it manually.
 
-**ClickHawk 把这些高频操作统一成一个 `ch` 命令**，终端里一行搞定，适合脚本化和 pipeline 集成。
+**ClickHawk unifies these high-frequency operations into a single `ch` command** — one line in the terminal, ready for scripting and pipeline integration.
 
 ---
 
-## 与现有工具的对比
+## Comparison with Existing Tools
 
-| 工具 | 类型 | 格式化输出 | 性能分析 | 慢查询 | 实时监控 | Schema 探索 | 脚本友好 |
+| Tool | Type | Formatted Output | Performance Analysis | Slow Queries | Live Monitoring | Schema Exploration | Script-Friendly |
 |------|------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **ClickHawk** | CLI 工具 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `clickhouse-client` | 官方 CLI | ❌ | ❌ | ❌ | ❌ | 有限 | ✅ |
+| **ClickHawk** | CLI Tool | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `clickhouse-client` | Official CLI | ❌ | ❌ | ❌ | ❌ | Limited | ✅ |
 | `clickhouse-connect` | Python SDK | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| DBeaver / DataGrip | GUI | ✅ | 有限 | ❌ | ❌ | ✅ | ❌ |
-| `infi.clickhouse_orm` | ORM 库 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| DBeaver / DataGrip | GUI | ✅ | Limited | ❌ | ❌ | ✅ | ❌ |
+| `infi.clickhouse_orm` | ORM Library | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-**核心优势：**
+**Core advantages:**
 
-- **一条命令，完整工作流** — 从查询执行到性能调试到 schema 管理，无需切换工具
-- **终端原生体验** — 基于 Rich 的彩色表格、实时刷新，比 `clickhouse-client` 的裸文本体验好一个量级
-- **零配置启动** — 一个 `.env` 文件，或直接设置环境变量，`pip install` 即用
-- **脚本友好** — 支持 `--format json/csv` 输出，可以直接接管道
-- **跨平台** — 纯 Python 实现，macOS、Linux、Windows 均可运行，无任何系统级依赖
-- **轻量无依赖** — 不需要 Java、Electron 或任何系统依赖，`pip install` 即用
-- **开源可扩展** — MIT 协议，欢迎贡献新命令
+- **One command, complete workflow** — from query execution to performance debugging to schema management, with no tool switching required.
+- **Native terminal experience** — Rich-powered colored tables and live refresh, a significant step up from the raw text output of `clickhouse-client`.
+- **Zero-configuration startup** — a single `.env` file, or set environment variables directly; ready to use after `pip install`.
+- **Script-friendly** — supports `--format json/csv` output that can be piped directly.
+- **Cross-platform** — pure Python implementation; runs on macOS, Linux, and Windows with no system-level dependencies.
+- **Lightweight** — no Java, Electron, or any system dependencies required; just `pip install`.
+- **Open source and extensible** — MIT license; contributions of new commands are welcome.
 
 ---
 
-## 安装
+## Installation
 
 ```bash
 pip install clickhawk
 ```
 
-**或者从源码安装（开发模式）：**
+**Or install from source (development mode):**
 
 ```bash
 git clone https://github.com/handsomevictor/clickhawk.git
@@ -60,22 +62,22 @@ cd clickhawk
 pip install -e ".[dev]"
 ```
 
-**环境要求：** Python 3.13+
+**Requirements:** Python 3.13+
 
-> **没有 ClickHouse？** 查看 [本地安装教程 →](tutorial.md)，包含 macOS / Linux / Windows 完整步骤及常见坑的解决方案。
+> **No ClickHouse?** See the [local installation tutorial](TUTORIAL.md) for complete setup steps on macOS, Linux, and Windows, including solutions to common issues.
 
 ---
 
-## 快速开始
+## Quick Start
 
-**第一步：配置连接**
+**Step 1: Configure the connection**
 
 ```bash
 cp .env.example .env
-# 编辑 .env，填入你的 ClickHouse 连接信息
+# Edit .env and fill in your ClickHouse connection details
 ```
 
-或者直接设置环境变量：
+Or set environment variables directly:
 
 ```bash
 export CH_HOST=your-clickhouse-host
@@ -84,13 +86,13 @@ export CH_PASSWORD=your-password
 export CH_DATABASE=default
 ```
 
-**第二步：验证连接**
+**Step 2: Verify the connection**
 
 ```bash
 ch health
 ```
 
-输出示例：
+Example output:
 ```
 ✓  ClickHouse  24.3.1.1
     Uptime   : 7 days, 3 hours
@@ -98,63 +100,63 @@ ch health
     Tables   : 42
 ```
 
-**第三步：开始使用**
+**Step 3: Start using**
 
 ```bash
-# 执行查询
+# Execute a query
 ch query "SELECT version()"
 
-# 分析慢查询
+# Profile a query
 ch profile "SELECT uniq(user_id) FROM events WHERE date >= today() - 7"
 
-# 查看过去 24h 的慢查询排行
+# View the top slow queries from the past 24 hours
 ch slowlog --top 20
 
-# 实时监控当前运行中的查询
+# Live-monitor currently running queries
 ch monitor
 ```
 
 ---
 
-## 命令参考
+## Command Reference
 
-### `ch health` — 集群健康检查
+### `ch health` — Cluster Health Check
 
 ```bash
 ch health
 ```
 
-检查连接状态，显示版本、uptime、数据库和表的数量。
+Checks connectivity and displays the ClickHouse version, uptime, and the number of databases and tables.
 
 ---
 
-### `ch query` — 执行 SQL 查询
+### `ch query` — Execute SQL Queries
 
 ```bash
 ch query "SELECT database, count() FROM system.tables GROUP BY database"
 
-# 指定输出格式
+# Specify output format
 ch query "SELECT * FROM my_table" --format json
 ch query "SELECT * FROM my_table" --format csv
 
-# 限制返回行数
+# Limit the number of rows returned
 ch query "SELECT * FROM large_table" --limit 100
 ```
 
-| 选项 | 简写 | 默认值 | 说明 |
-|------|------|--------|------|
-| `--format` | `-f` | `table` | 输出格式：`table` / `json` / `csv` |
-| `--limit` | `-l` | 无 | 限制返回行数 |
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--format` | `-f` | `table` | Output format: `table` / `json` / `csv` |
+| `--limit` | `-l` | none | Limit the number of rows returned |
 
 ---
 
-### `ch profile` — 查询性能分析
+### `ch profile` — Query Performance Analysis
 
 ```bash
 ch profile "SELECT uniq(user_id) FROM events"
 ```
 
-输出示例：
+Example output:
 ```
 ╔══════════════════════╦══════════════╗
 ║ Metric               ║ Value        ║
@@ -169,81 +171,81 @@ ch profile "SELECT uniq(user_id) FROM events"
 ╚══════════════════════╩══════════════╝
 ```
 
-从 `system.query_log` 提取真实的执行统计，包括读取的行数、字节数、内存使用、选中的 parts 和 ranges —— 这些是优化 ClickHouse 查询的核心指标。
+Extracts real execution statistics from `system.query_log`, including rows read, bytes read, memory usage, and parts/ranges selected — the core metrics for optimizing ClickHouse queries.
 
 ---
 
-### `ch slowlog` — 慢查询历史
+### `ch slowlog` — Slow Query History
 
 ```bash
-# 查看最近 24h 慢于 1s 的前 20 条查询
+# View the top 20 queries slower than 1s in the last 24 hours
 ch slowlog
 
-# 自定义参数
+# Customize parameters
 ch slowlog --top 50 --threshold 500 --hours 48
 ```
 
-| 选项 | 简写 | 默认值 | 说明 |
-|------|------|--------|------|
-| `--top` | `-n` | `20` | 显示条数 |
-| `--threshold` | `-t` | `1000` | 最小耗时（毫秒） |
-| `--hours` | | `24` | 回溯时间范围（小时） |
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--top` | `-n` | `20` | Number of results to display |
+| `--threshold` | `-t` | `1000` | Minimum duration in milliseconds |
+| `--hours` | | `24` | Look-back window in hours |
 
 ---
 
-### `ch schema show` — 查看表结构
+### `ch schema show` — Inspect Table Structure
 
 ```bash
 ch schema show my_table
 
-# 指定数据库
+# Specify a database
 ch schema show my_table --database analytics
 ```
 
-显示列名、类型、默认值和注释。
+Displays column names, types, default values, and comments.
 
 ---
 
-### `ch schema tables` — 列出所有表
+### `ch schema tables` — List All Tables
 
 ```bash
-# 列出所有用户表（含大小和行数）
+# List all user tables with size and row count
 ch schema tables
 
-# 筛选指定数据库
+# Filter by database
 ch schema tables --database analytics
 ```
 
 ---
 
-### `ch monitor` — 实时查询监控
+### `ch monitor` — Live Query Monitoring
 
 ```bash
-# 默认每 2s 刷新一次
+# Default refresh interval is 2 seconds
 ch monitor
 
-# 自定义刷新频率
+# Set a custom refresh interval
 ch monitor --interval 5
 ```
 
-实时展示 `system.processes` 中的运行查询，超过 5s 显示黄色警告，超过 30s 显示红色告警。按 `Ctrl+C` 退出。
+Displays running queries from `system.processes` in real time. Queries running longer than 5 seconds are highlighted in yellow; those running longer than 30 seconds are shown in red. Press `Ctrl+C` to exit.
 
 ---
 
-## 配置
+## Configuration
 
-ClickHawk 通过环境变量或 `.env` 文件进行配置（基于 Pydantic Settings，支持优先级覆盖）：
+ClickHawk is configured via environment variables or a `.env` file (backed by Pydantic Settings, with priority-based override support):
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `CH_HOST` | `localhost` | ClickHouse 主机地址 |
-| `CH_PORT` | `8123` | HTTP 端口 |
-| `CH_USER` | `default` | 用户名 |
-| `CH_PASSWORD` | `""` | 密码 |
-| `CH_DATABASE` | `default` | 默认数据库 |
-| `CH_SECURE` | `false` | 是否启用 HTTPS/TLS |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CH_HOST` | `localhost` | ClickHouse host address |
+| `CH_PORT` | `8123` | HTTP port |
+| `CH_USER` | `default` | Username |
+| `CH_PASSWORD` | `""` | Password |
+| `CH_DATABASE` | `default` | Default database |
+| `CH_SECURE` | `false` | Enable HTTPS/TLS |
 
-`.env` 文件示例：
+Example `.env` file:
 
 ```env
 CH_HOST=clickhouse.prod.internal
@@ -256,49 +258,73 @@ CH_SECURE=true
 
 ---
 
-## 路线图
+## Testing
 
-| 版本 | 功能 | 状态 |
-|------|------|------|
-| **v0.1** | `query` / `profile` / `slowlog` / `schema` / `monitor` / `health` | ✅ 已发布 |
-| **v0.2** | `ch explain` 彩色树形 EXPLAIN 输出 | 🔜 计划中 |
-| **v0.2** | `ch schema diff` 两环境 schema 对比 | 🔜 计划中 |
-| **v0.2** | `ch migrate` schema 迁移管理 | 🔜 计划中 |
-| **v0.3** | `ch check nulls/cardinality` 数据质量扫描 | 📋 规划中 |
-| **v0.3** | `ch export` 导出到 Parquet/CSV/JSON/S3 | 📋 规划中 |
+**Run unit tests:**
+
+```bash
+pytest tests/unit/
+```
+
+**Run integration tests (requires a running ClickHouse instance):**
+
+```bash
+pytest tests/integration/ -m integration
+```
+
+**Run all tests:**
+
+```bash
+pytest
+```
+
+> Integration tests automatically skip if ClickHouse is not available, so the full test suite can always be run safely in any environment.
 
 ---
 
-## 贡献
+## Roadmap
 
-欢迎 PR 和 Issue！
+| Version | Feature | Status |
+|---------|---------|--------|
+| **v0.1** | `query` / `profile` / `slowlog` / `schema` / `monitor` / `health` | Released |
+| **v0.2** | `ch explain` — colored tree-style EXPLAIN output | Planned |
+| **v0.2** | `ch schema diff` — schema comparison across environments | Planned |
+| **v0.2** | `ch migrate` — schema migration management | Planned |
+| **v0.3** | `ch check nulls/cardinality` — data quality scanning | Backlog |
+| **v0.3** | `ch export` — export to Parquet / CSV / JSON / S3 | Backlog |
+
+---
+
+## Contributing
+
+PRs and issues are welcome!
 
 ```bash
-# 克隆仓库
+# Clone the repository
 git clone https://github.com/your-username/clickhawk.git
 cd clickhawk
 
-# 安装开发依赖
+# Install development dependencies
 pip install -e ".[dev]"
 
-# 运行 linter
+# Run the linter
 ruff check .
 
-# 运行类型检查
+# Run type checks
 mypy clickhawk/
 
-# 运行测试
+# Run tests
 pytest
 ```
 
 ---
 
-## 许可证
+## License
 
 MIT © Victor Li
 
 ---
 
 <p align="center">
-  如果 ClickHawk 帮你节省了时间，请给个 ⭐ Star — 这对项目意义重大。
+  If ClickHawk has saved you time, please give it a Star — it means a lot to the project.
 </p>

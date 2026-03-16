@@ -2,7 +2,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-app = typer.Typer(help="Inspect slow query history.")
+app = typer.Typer(help="Inspect slow query history.", context_settings={"allow_interspersed_args": True})
 console = Console()
 
 

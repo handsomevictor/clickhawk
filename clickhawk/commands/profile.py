@@ -4,7 +4,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-app = typer.Typer(help="Profile query performance.")
+app = typer.Typer(help="Profile query performance.", context_settings={"allow_interspersed_args": True})
 console = Console()
 
 
@@ -24,8 +24,8 @@ def run(
     client.query(sql, settings={"log_queries": 1, "query_id": query_id})
     wall_time = time.perf_counter() - start
 
-    # Give query_log a moment to flush
-    time.sleep(0.3)
+    # Give query_log a moment to flush (flush_interval default ~1s)
+    time.sleep(1.2)
 
     stats = client.query(f"""
         SELECT

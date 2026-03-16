@@ -1,3 +1,5 @@
+> English version: [BASIC_QUERY.md](BASIC_QUERY.md)
+
 # 示例：基础查询
 
 ## 1. 验证连接和集群状态
