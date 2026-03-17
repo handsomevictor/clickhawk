@@ -1,4 +1,4 @@
-# 🦅 ClickHawk
+# ClickHawk
 
 > English version: [README.md](README.md)
 
@@ -92,7 +92,6 @@ export CH_DATABASE=default
 ch health
 ```
 
-输出示例：
 ```
 ✓  ClickHouse  24.3.1.1
     Uptime   : 7 days, 3 hours
@@ -103,16 +102,9 @@ ch health
 **第三步：开始使用**
 
 ```bash
-# 执行查询
 ch query "SELECT version()"
-
-# 分析慢查询
 ch profile "SELECT uniq(user_id) FROM events WHERE date >= today() - 7"
-
-# 查看过去 24h 的慢查询排行
 ch slowlog --top 20
-
-# 实时监控当前运行中的查询
 ch monitor
 ```
 
@@ -126,7 +118,12 @@ ch monitor
 ch health
 ```
 
-检查连接状态，显示版本、uptime、数据库和表的数量。
+```
+✓  ClickHouse  24.3.1.1
+    Uptime   : 7 days, 3 hours
+    Databases: 5
+    Tables   : 42
+```
 
 ---
 
@@ -134,13 +131,25 @@ ch health
 
 ```bash
 ch query "SELECT database, count() FROM system.tables GROUP BY database"
+```
 
-# 指定输出格式
-ch query "SELECT * FROM my_table" --format json
-ch query "SELECT * FROM my_table" --format csv
+```
+┌──────────────────┬──────────┐
+│ database         │ count()  │
+├──────────────────┼──────────┤
+│ default          │       12 │
+│ system           │       73 │
+│ demo             │        5 │
+└──────────────────┴──────────┘
+3 rows  (0.021s)
+```
 
-# 限制返回行数
-ch query "SELECT * FROM large_table" --limit 100
+```bash
+# JSON / CSV 输出，方便接管道
+ch query "SELECT database, count() FROM system.tables GROUP BY database" --format json
+
+# 限制行数
+ch query "SELECT * FROM events" --limit 5
 ```
 
 | 选项 | 简写 | 默认值 | 说明 |
@@ -156,7 +165,6 @@ ch query "SELECT * FROM large_table" --limit 100
 ch profile "SELECT uniq(user_id) FROM events"
 ```
 
-输出示例：
 ```
 ╔══════════════════════╦══════════════╗
 ║ Metric               ║ Value        ║
@@ -178,11 +186,17 @@ ch profile "SELECT uniq(user_id) FROM events"
 ### `ch slowlog` — 慢查询历史
 
 ```bash
-# 查看最近 24h 慢于 1s 的前 20 条查询
 ch slowlog
-
-# 自定义参数
 ch slowlog --top 50 --threshold 500 --hours 48
+```
+
+```
+┌──────────────────────┬────────────┬───────────┬──────────────────────────────────────┐
+│ started              │ duration   │ user      │ query                                │
+├──────────────────────┼────────────┼───────────┼──────────────────────────────────────┤
+│ 2026-03-17 09:12:44  │ 4,821 ms   │ analyst   │ SELECT uniq(session_id) FROM events… │
+│ 2026-03-17 08:55:01  │ 3,102 ms   │ default   │ SELECT * FROM orders WHERE date >=…  │
+└──────────────────────┴────────────┴───────────┴──────────────────────────────────────┘
 ```
 
 | 选项 | 简写 | 默认值 | 说明 |
@@ -196,24 +210,39 @@ ch slowlog --top 50 --threshold 500 --hours 48
 ### `ch schema show` — 查看表结构
 
 ```bash
-ch schema show my_table
-
-# 指定数据库
-ch schema show my_table --database analytics
+ch schema show events
+ch schema show events --database analytics
 ```
 
-显示列名、类型、默认值和注释。
+```
+┌─────────────┬─────────────────────────┬─────────┬─────────┐
+│ Column      │ Type                    │ Default │ Comment │
+├─────────────┼─────────────────────────┼─────────┼─────────┤
+│ event_id    │ UUID                    │         │         │
+│ user_id     │ UInt64                  │         │         │
+│ event_type  │ LowCardinality(String)  │         │         │
+│ date        │ Date                    │         │         │
+│ created_at  │ DateTime                │ now()   │         │
+└─────────────┴─────────────────────────┴─────────┴─────────┘
+```
 
 ---
 
 ### `ch schema tables` — 列出所有表
 
 ```bash
-# 列出所有用户表（含大小和行数）
 ch schema tables
-
-# 筛选指定数据库
 ch schema tables --database analytics
+```
+
+```
+┌──────────────┬──────────────┬──────────────────┬──────────┬────────────┐
+│ database     │ table        │ engine           │ size     │ rows       │
+├──────────────┼──────────────┼──────────────────┼──────────┼────────────┤
+│ demo         │ events       │ MergeTree        │ 412.3 MB │ 12,847,291 │
+│ demo         │ orders       │ MergeTree        │  87.1 MB │  1,203,445 │
+│ demo         │ users        │ ReplacingMergeT… │   2.1 MB │     45,231 │
+└──────────────┴──────────────┴──────────────────┴──────────┴────────────┘
 ```
 
 ---
@@ -221,14 +250,209 @@ ch schema tables --database analytics
 ### `ch monitor` — 实时查询监控
 
 ```bash
-# 默认每 2s 刷新一次
-ch monitor
-
-# 自定义刷新频率
+ch monitor           # 默认每 2s 刷新一次
 ch monitor --interval 5
 ```
 
-实时展示 `system.processes` 中的运行查询，超过 5s 显示黄色警告，超过 30s 显示红色告警。按 `Ctrl+C` 退出。
+```
+Running queries  (2026-03-17 09:15:30)
+┌──────────────────┬──────────┬───────────┬──────────────────────────────────────┐
+│ query_id         │ elapsed  │ user      │ query                                │
+├──────────────────┼──────────┼───────────┼──────────────────────────────────────┤
+│ 3a7f1c2b…        │  38.2 s  │ analyst   │ SELECT uniq(session_id) FROM events… │  ← 红色
+│ d91e4f07…        │   6.7 s  │ default   │ SELECT count() FROM orders WHERE …   │  ← 黄色
+└──────────────────┴──────────┴───────────┴──────────────────────────────────────┘
+```
+
+超过 5s 显示黄色警告，超过 30s 显示红色告警。按 `Ctrl+C` 退出。
+
+---
+
+### `ch explain` — 彩色 EXPLAIN 树
+
+```bash
+ch explain "SELECT uniq(user_id) FROM events WHERE date >= today() - 7"
+ch explain "SELECT count() FROM events" --kind pipeline
+ch explain "select count() from events" --kind syntax
+```
+
+```
+Expression
+└── Aggregating
+    └── Filter
+        └── ReadFromMergeTree (demo.events)
+              Indexes:
+                PrimaryKey
+                  Condition: true
+                  Parts: 24/24
+                  Granules: 3721/3721
+```
+
+以彩色树形渲染 EXPLAIN 输出 —— `ReadFromMergeTree` 青色、`Filter` 黄色、`Aggregating` 品红色 —— 让查询计划一目了然。
+
+---
+
+### `ch schema diff` — 跨环境 Schema 对比
+
+```bash
+ch schema diff events --host2 staging.internal --database analytics
+```
+
+```
+Schema diff: demo.events  (prod vs staging)
+┌─────────────┬──────────────────────────┬──────────────────────────┐
+│ Column      │ prod                     │ staging                  │
+├─────────────┼──────────────────────────┼──────────────────────────┤
+│ session_id  │ String                   │ —           (removed)    │  ← 红色
+│ v2_flag     │ —           (missing)    │ UInt8                    │  ← 绿色
+│ event_type  │ String                   │ LowCardinality(String)   │  ← 黄色
+└─────────────┴──────────────────────────┴──────────────────────────┘
+```
+
+---
+
+### `ch migrate` — Schema 迁移管理
+
+```bash
+ch migrate status --dir migrations/
+ch migrate run --dir migrations/ --dry-run
+ch migrate run --dir migrations/
+```
+
+```
+Migration status  (dir: migrations/)
+┌───────────────────────────────┬──────────┬──────────────────────┐
+│ File                          │ Status   │ Applied at           │
+├───────────────────────────────┼──────────┼──────────────────────┤
+│ 001_create_events.sql         │ applied  │ 2026-03-15 10:22:01  │
+│ 002_add_session_id.sql        │ applied  │ 2026-03-16 08:45:33  │
+│ 003_add_v2_flag.sql           │ pending  │ —                    │
+└───────────────────────────────┴──────────┴──────────────────────┘
+
+✓ Applied 003_add_v2_flag.sql
+1 migration applied.
+```
+
+按字母顺序执行目录下的 `.sql` 文件，通过 `_clickhawk_migrations` 表追踪已执行的迁移，保证幂等性。
+
+---
+
+### `ch check nulls` — 列级空值率扫描
+
+```bash
+ch check nulls events --database analytics
+ch check nulls large_table --sample 500000
+```
+
+```
+Null analysis: demo.events  (sample: 1,000,000 rows)
+┌─────────────┬────────────┬──────────┐
+│ Column      │ Null count │ Null %   │
+├─────────────┼────────────┼──────────┤
+│ event_id    │          0 │   0.00 % │
+│ user_id     │          0 │   0.00 % │
+│ session_id  │    142,301 │  14.23 % │  ← 黄色
+│ referrer    │    603,812 │  60.38 % │  ← 红色
+└─────────────┴────────────┴──────────┘
+```
+
+---
+
+### `ch check cardinality` — 列级基数扫描
+
+```bash
+ch check cardinality events --database analytics
+```
+
+```
+Cardinality: demo.events  (sample: 1,000,000 rows)
+┌─────────────┬─────────────┬───────────┬──────────────────────────────┐
+│ Column      │ Cardinality │ Ratio %   │ Verdict                      │
+├─────────────┼─────────────┼───────────┼──────────────────────────────┤
+│ user_id     │     891,204 │   89.12 % │ high — consider skip index   │
+│ session_id  │     712,448 │   71.24 % │ high                         │
+│ event_type  │          12 │    0.00 % │ low — consider LowCardinality│
+│ date        │         365 │    0.04 % │ low — consider LowCardinality│
+└─────────────┴─────────────┴───────────┴──────────────────────────────┘
+```
+
+---
+
+### `ch export` — 导出到 CSV / JSON / Parquet / S3
+
+```bash
+ch export "SELECT * FROM events WHERE date = today()" --output today.csv
+ch export "SELECT * FROM events" --output snapshot.parquet  # 需要: pip install pyarrow
+ch export events --output events.json --limit 10000
+
+# 直接上传到 S3（需要: pip install boto3）
+ch export "SELECT * FROM events" --s3 s3://my-bucket/exports/events.csv
+```
+
+```
+✓ 12,847,291 rows → today.csv
+✓ 12,847,291 rows → s3://my-bucket/exports/events.csv
+```
+
+| 选项 | 简写 | 默认值 | 说明 |
+|------|------|--------|------|
+| `--output` | `-o` | — | 本地输出文件 |
+| `--s3` | | — | S3 目标 URI（`s3://bucket/key`） |
+| `--format` | `-f` | 自动 | 格式：`csv` / `json` / `parquet` |
+| `--limit` | `-l` | 无 | 最大导出行数 |
+
+S3 凭证从环境变量（`AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`）或 `~/.aws/credentials` 读取。
+
+---
+
+### `ch kill` — 终止运行中的查询
+
+```bash
+ch kill 3a7f1c2b
+ch kill --user analyst
+ch kill --user etl_user --yes
+```
+
+```
+Queries to kill:
+┌──────────────────┬──────────┬───────────┬──────────────────────────────────────┐
+│ query_id         │ elapsed  │ user      │ query                                │
+├──────────────────┼──────────┼───────────┼──────────────────────────────────────┤
+│ 3a7f1c2b…        │  38.2 s  │ analyst   │ SELECT uniq(session_id) FROM events… │
+└──────────────────┴──────────┴───────────┴──────────────────────────────────────┘
+Kill 1 query? [y/N]: y
+✓ Killed 3a7f1c2b…
+```
+
+---
+
+### `ch top` — 按资源排序的 Top 查询
+
+```bash
+ch top
+ch top --sort memory
+ch top --sort rows --top 10 --interval 5
+```
+
+```
+ Running: 3   Memory: 234.5 MB   Rows read: 28,103,445
+
+┌──────────────────┬──────────┬───────────┬───────────────┬──────────────────────────────────────┐
+│ query_id         │ Elapsed  │ user      │ Memory        │ query                                │
+├──────────────────┼──────────┼───────────┼───────────────┼──────────────────────────────────────┤
+│ 3a7f1c2b…        │  38.2 s  │ analyst   │    87.5 MB    │ SELECT uniq(session_id) FROM events… │
+│ d91e4f07…        │   6.7 s  │ default   │    45.0 MB    │ SELECT count() FROM orders WHERE …   │
+└──────────────────┴──────────┴───────────┴───────────────┴──────────────────────────────────────┘
+```
+
+| `--sort` 值 | 说明 |
+|------------|------|
+| `elapsed` | 查询已运行时长（默认） |
+| `memory` | 当前内存用量 |
+| `rows` | 已读取行数 |
+| `cpu` | CPU 时间（微秒） |
+
+按 `Ctrl+C` 退出。
 
 ---
 
@@ -287,11 +511,17 @@ pytest
 | 版本 | 功能 | 状态 |
 |------|------|------|
 | **v0.1** | `query` / `profile` / `slowlog` / `schema` / `monitor` / `health` | ✅ 已发布 |
-| **v0.2** | `ch explain` 彩色树形 EXPLAIN 输出 | 🔜 计划中 |
-| **v0.2** | `ch schema diff` 两环境 schema 对比 | 🔜 计划中 |
-| **v0.2** | `ch migrate` schema 迁移管理 | 🔜 计划中 |
-| **v0.3** | `ch check nulls/cardinality` 数据质量扫描 | 📋 规划中 |
-| **v0.3** | `ch export` 导出到 Parquet/CSV/JSON/S3 | 📋 规划中 |
+| **v0.2** | `ch explain` — 彩色树形 EXPLAIN 输出 | ✅ 已发布 |
+| **v0.2** | `ch schema diff` — 跨环境 schema 对比 | ✅ 已发布 |
+| **v0.2** | `ch migrate run/status` — 文件驱动的 schema 迁移管理 | ✅ 已发布 |
+| **v0.2** | `ch check nulls/cardinality` — 数据质量扫描 | ✅ 已发布 |
+| **v0.2** | `ch export` — 导出到 CSV / JSON / Parquet | ✅ 已发布 |
+| **v0.3** | `ch kill <query_id>` — 从终端终止运行中的查询 | ✅ 已发布 |
+| **v0.3** | `ch export --s3` — 直接上传结果到 S3 | ✅ 已发布 |
+| **v0.3** | `ch top` — 按 CPU / 内存 / 行数 / 耗时排序的实时 Top 面板 | ✅ 已发布 |
+| **v0.4** | `ch top --filter <user>` — 按用户过滤实时视图 | 规划中 |
+| **v0.4** | `ch export --s3` 超大结果集分块 Multipart 上传 | 规划中 |
+| **v0.4** | `ch profile --compare` — 两次查询 Profile 对比 | 规划中 |
 
 ---
 
@@ -314,11 +544,11 @@ pytest
 
 ## 贡献
 
-欢迎 PR 和 Issue！
+欢迎 PR 和 Issue！→ [github.com/handsomevictor/clickhawk](https://github.com/handsomevictor/clickhawk/tree/main)
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/clickhawk.git
+git clone https://github.com/handsomevictor/clickhawk.git
 cd clickhawk
 
 # 安装开发依赖
@@ -343,5 +573,5 @@ MIT © Victor Li
 ---
 
 <p align="center">
-  如果 ClickHawk 帮你节省了时间，请给个 ⭐ Star — 这对项目意义重大。
+  如果 ClickHawk 帮你节省了时间，请给个 Star — 这对项目意义重大。
 </p>

@@ -12,23 +12,6 @@
 
 ---
 
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [TUTORIAL.md](TUTORIAL.md) | Local ClickHouse setup guide for macOS / Linux / Windows, including full config and troubleshooting |
-| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
-| [LESSONS_LEARNED.md](LESSONS_LEARNED.md) | Pitfalls encountered during development — useful for contributors |
-| [STRUCTURE.md](STRUCTURE.md) | Project layout and module responsibilities |
-| [examples/BASIC_QUERY.md](examples/BASIC_QUERY.md) | `ch query` usage examples |
-| [examples/PROFILING.md](examples/PROFILING.md) | `ch profile` — how to read metrics and diagnose slow queries |
-| [examples/MONITORING.md](examples/MONITORING.md) | `ch monitor` + `ch slowlog` — production incident workflow |
-| [examples/SCHEMA_EXPLORATION.md](examples/SCHEMA_EXPLORATION.md) | `ch schema` — table inspection and schema workflows |
-
-> All documents are available in English and Chinese (append `_CN` to the filename for the Chinese version, e.g. `TUTORIAL_CN.md`).
-
----
-
 ## Why ClickHawk?
 
 The ClickHouse ecosystem has many tools, but none of them address the real pain points data engineers face in daily work:
@@ -542,13 +525,30 @@ pytest
 
 ---
 
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [TUTORIAL.md](TUTORIAL.md) | Local ClickHouse setup guide for macOS / Linux / Windows, including full config and troubleshooting |
+| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
+| [LESSONS_LEARNED.md](LESSONS_LEARNED.md) | Pitfalls encountered during development — useful for contributors |
+| [STRUCTURE.md](STRUCTURE.md) | Project layout and module responsibilities |
+| [examples/BASIC_QUERY.md](examples/BASIC_QUERY.md) | `ch query` usage examples |
+| [examples/PROFILING.md](examples/PROFILING.md) | `ch profile` — how to read metrics and diagnose slow queries |
+| [examples/MONITORING.md](examples/MONITORING.md) | `ch monitor` + `ch slowlog` — production incident workflow |
+| [examples/SCHEMA_EXPLORATION.md](examples/SCHEMA_EXPLORATION.md) | `ch schema` — table inspection and schema workflows |
+
+> All documents are available in English and Chinese (append `_CN` to the filename for the Chinese version, e.g. `TUTORIAL_CN.md`).
+
+---
+
 ## Contributing
 
-PRs and issues are welcome!
+PRs and issues are welcome! → [github.com/handsomevictor/clickhawk](https://github.com/handsomevictor/clickhawk/tree/main)
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/clickhawk.git
+git clone https://github.com/handsomevictor/clickhawk.git
 cd clickhawk
 
 # Install development dependencies
