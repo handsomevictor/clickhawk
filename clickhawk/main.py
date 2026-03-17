@@ -1,7 +1,7 @@
 import typer
 from rich.console import Console
 
-from clickhawk.commands import check, explain, export, migrate, monitor, profile, query, schema, slowlog
+from clickhawk.commands import check, explain, export, kill, migrate, monitor, profile, query, schema, slowlog, top
 
 app = typer.Typer(
     name="ch",
@@ -18,6 +18,8 @@ app.add_typer(migrate.app, name="migrate")
 app.add_typer(explain.app, name="explain")
 app.add_typer(check.app,   name="check")
 app.add_typer(export.app,  name="export")
+app.add_typer(kill.app,    name="kill")
+app.add_typer(top.app,     name="top")
 
 console = Console()
 

@@ -284,7 +284,7 @@ export CH_DATABASE=demo   # set to the demo database created in Step 2
 
 ---
 
-### Health check
+### `ch health` — Health check
 
 ```bash
 ch health
@@ -292,47 +292,96 @@ ch health
 
 **Expected output:**
 ```
-✓  ClickHouse  26.x.x.x
-    Uptime   : X minutes
+✓  ClickHouse  26.3.x.x
+    Uptime   : 42 minutes
     Databases: 3
-    Tables   : X
+    Tables   : 13
 ```
 
 ---
 
-### Execute a query (table format)
+### `ch query` — Execute queries
+
+**Table format (default):**
 
 ```bash
 ch query 'SELECT event_type, count() AS cnt FROM demo.events GROUP BY event_type ORDER BY cnt DESC'
 ```
 
----
+**Expected output:**
+```
+┌────────────┬─────┐
+│ event_type │ cnt │
+├────────────┼─────┤
+│ view       │ 254 │
+│ click      │ 251 │
+│ signup     │ 249 │
+│ purchase   │ 246 │
+└────────────┴─────┘
+4 rows
+```
 
-### JSON output
+**JSON format:**
 
 ```bash
 ch query 'SELECT event_type, count() AS cnt FROM demo.events GROUP BY event_type' --format json
 ```
 
----
+**Expected output:**
+```json
+[
+  {"event_type": "view", "cnt": 254},
+  {"event_type": "click", "cnt": 251},
+  {"event_type": "signup", "cnt": 249},
+  {"event_type": "purchase", "cnt": 246}
+]
+```
 
-### CSV output
+**CSV format:**
 
 ```bash
-ch query 'SELECT user_id, count() AS cnt FROM demo.events GROUP BY user_id LIMIT 5' --format csv
+ch query 'SELECT user_id, count() AS cnt FROM demo.events GROUP BY user_id ORDER BY cnt DESC LIMIT 5' --format csv
+```
+
+**Expected output:**
+```
+user_id,cnt
+412,7
+88,6
+531,6
+774,6
+203,5
+```
+
+**Limit rows:**
+
+```bash
+ch query 'SELECT * FROM demo.events' --limit 3
+```
+
+**Expected output:**
+```
+┌──────────────────────────────────────┬─────────┬────────────┬────────────────────────────┬────────────┐
+│ event_id                             │ user_id │ event_type │ created_at                 │ date       │
+├──────────────────────────────────────┼─────────┼────────────┼────────────────────────────┼────────────┤
+│ 3e1a2b4c-...                         │ 412     │ click      │ 2026-03-17 10:23:01.123    │ 2026-03-17 │
+│ 7f8d9e0a-...                         │ 88      │ view       │ 2026-03-17 10:23:01.124    │ 2026-03-17 │
+│ 1c2d3e4f-...                         │ 531     │ purchase   │ 2026-03-17 10:23:01.125    │ 2026-03-17 │
+└──────────────────────────────────────┴─────────┴────────────┴────────────────────────────┴────────────┘
+3 rows
 ```
 
 ---
 
-### Query profiling
+### `ch profile` — Query performance analysis
 
 > **Note:** `ch profile` depends on `system.query_log`. Run a plain query first to initialize the table, then profile.
 
 ```bash
-# Step 1: run a warm-up query (initializes query_log)
+# Step 1: warm-up query (initializes query_log)
 ch query 'SELECT count() FROM demo.events'
 
-# Step 2: wait for query_log to flush (~1 second)
+# Step 2: wait for flush
 sleep 1
 
 # Step 3: profile
@@ -342,115 +391,289 @@ ch profile 'SELECT uniq(user_id) FROM demo.events WHERE date = today()'
 **Expected output:**
 ```
 🔍 Query Profile
-┌──────────────────────┬──────────────┐
-│ Metric               │ Value        │
-├──────────────────────┼──────────────┤
-│ Wall time            │ 0.00Xs       │
-│ DB duration          │ X ms         │
-│ Rows read            │ XXX          │
-│ Bytes read           │ X.XX MB      │
-│ Memory used          │ X.XX MB      │
-│ Parts selected       │ X            │
-│ Ranges selected      │ X            │
-└──────────────────────┴──────────────┘
+┌──────────────────┬──────────┐
+│ Metric           │ Value    │
+├──────────────────┼──────────┤
+│ Wall time        │ 0.043s   │
+│ DB duration      │ 12 ms    │
+│ Rows read        │ 1,000    │
+│ Bytes read       │ 0.02 MB  │
+│ Memory used      │ 0.10 MB  │
+│ Parts selected   │ 1        │
+│ Ranges selected  │ 4        │
+└──────────────────┴──────────┘
 ```
 
 > Values will be small with local data — that is expected. See [examples/PROFILING.md](examples/PROFILING.md) for metric explanations.
 
 ---
 
-### Slow query history
+### `ch slowlog` — Slow query history
 
 ```bash
 ch slowlog --threshold 1 --hours 1 --top 10
 ```
 
+**Expected output:**
+```
+🐢 Slow Queries  (last 1h  ·  ≥1ms  ·  top 10)
+┌──────────┬─────────────┬───────────┬───────────┬──────────┬──────────┬──────────────────────────────────────────────┐
+│ Time     │ Duration(ms)│ Rows Read │ Bytes Read│ Memory   │ User     │ Query                                        │
+├──────────┼─────────────┼───────────┼───────────┼──────────┼──────────┼──────────────────────────────────────────────┤
+│ 10:24:01 │ 43          │ 1,000     │ 19.5 KiB  │ 98.3 KiB │ default  │ SELECT uniq(user_id) FROM demo.events ...    │
+│ 10:23:55 │ 12          │ 1,000     │ 4.0 KiB   │ 0 B      │ default  │ SELECT count() FROM demo.events              │
+└──────────┴─────────────┴───────────┴───────────┴──────────┴──────────┴──────────────────────────────────────────────┘
+2 queries found
+```
+
 ---
 
-### Schema exploration
+### `ch schema` — Schema exploration
 
 ```bash
 ch schema tables --database demo
+```
+
+**Expected output:**
+```
+           Tables
+┌──────────┬────────┬───────────┬──────────┬────────┐
+│ Database │ Table  │ Engine    │ Size     │ Rows   │
+├──────────┼────────┼───────────┼──────────┼────────┤
+│ demo     │ events │ MergeTree │ 57.00 KiB│ 1.00 K │
+└──────────┴────────┴───────────┴──────────┴────────┘
+1 tables
 ```
 
 ```bash
 ch schema show events --database demo
 ```
 
+**Expected output:**
+```
+              Schema: events
+┌────────────┬──────────────────────────┬────────────────────┬─────────┐
+│ Column     │ Type                     │ Default            │ Comment │
+├────────────┼──────────────────────────┼────────────────────┼─────────┤
+│ event_id   │ UUID                     │ generateUUIDv4()   │         │
+│ user_id    │ UInt64                   │                    │         │
+│ event_type │ LowCardinality(String)   │                    │         │
+│ created_at │ DateTime64(3)            │ now64()            │         │
+│ date       │ Date                     │ toDate(created_at) │         │
+└────────────┴──────────────────────────┴────────────────────┴─────────┘
+```
+
 ---
 
-### Live monitoring
+### `ch monitor` — Live query monitoring
 
-In terminal 1, start the monitor:
+In **terminal 1**, start the monitor:
 
 ```bash
 ch monitor
 ```
 
-In terminal 2, create a long-running query so the monitor has something to show:
+In **terminal 2**, run a slow query to give the monitor something to show:
 
 ```bash
-# macOS / Linux (Homebrew install)
+# macOS / Linux (Homebrew)
 clickhouse client --query 'SELECT sleep(3)'
 
 # Docker
 docker exec -it clickhouse-local clickhouse-client --query 'SELECT sleep(3)'
 ```
 
-> **Note:** ClickHouse limits `sleep()` to a maximum of 3 seconds. `SELECT sleep(10)` raises a `TOO_SLOW` error.
+> **Note:** ClickHouse limits `sleep()` to 3 seconds maximum. `SELECT sleep(10)` raises `TOO_SLOW`.
 
-Watch terminal 1 for the query to appear in `ch monitor`. Press `Ctrl+C` to exit. See [examples/MONITORING.md](examples/MONITORING.md) for more scenarios.
+**Expected output in terminal 1:**
+```
+⚡ Live Queries  (Ctrl+C to exit)
+┌──────────┬─────────┬───────────┬───────────┬──────────┬──────────────────────┐
+│ ID       │ User    │ Elapsed(s)│ Rows Read │ Memory   │ Query                │
+├──────────┼─────────┼───────────┼───────────┼──────────┼──────────────────────┤
+│ 3a7f1c2b │ default │ 1.4       │ 0         │ 0 B      │ SELECT sleep(3)      │  ← yellow (>5s turns red)
+└──────────┴─────────┴───────────┴───────────┴──────────┴──────────────────────┘
+```
+
+Press `Ctrl+C` to exit. See [examples/MONITORING.md](examples/MONITORING.md) for more scenarios.
 
 ---
 
-### EXPLAIN plan (v0.2+)
+### `ch explain` — Colorized EXPLAIN plan (v0.2+)
 
 ```bash
 ch explain 'SELECT uniq(user_id) FROM demo.events WHERE date = today()'
 ```
 
-Renders the query plan as a color-coded tree.
+**Expected output:**
+```
+EXPLAIN PLAN
+└── Expression
+    └── Aggregating
+        └── Expression
+            └── Filter
+                └── ReadFromMergeTree
+                    └── indexes: ...
+```
+
+Node types are color-coded: `ReadFromMergeTree` in cyan, `Filter` in yellow, `Aggregating` in magenta.
 
 ---
 
-### Data quality checks (v0.2+)
+### `ch check` — Data quality checks (v0.2+)
 
 ```bash
-# Null percentage per column (sample 100k rows for speed)
 ch check nulls events --database demo --sample 100000
+```
 
-# Cardinality per column
+**Expected output:**
+```
+Null Check: events  (n=1,000)
+┌────────────┬──────────────────────────┬─────────────┬────────┬───────────┐
+│ Column     │ Type                     │ Null Count  │ Null % │ Nullable? │
+├────────────┼──────────────────────────┼─────────────┼────────┼───────────┤
+│ event_id   │ UUID                     │ 0           │ 0.0%   │ no        │
+│ user_id    │ UInt64                   │ 0           │ 0.0%   │ no        │
+│ event_type │ LowCardinality(String)   │ 0           │ 0.0%   │ no        │
+│ created_at │ DateTime64(3)            │ 0           │ 0.0%   │ no        │
+│ date       │ Date                     │ 0           │ 0.0%   │ no        │
+└────────────┴──────────────────────────┴─────────────┴────────┴───────────┘
+```
+
+```bash
 ch check cardinality events --database demo --sample 100000
 ```
 
----
-
-### Export data (v0.2+)
-
-```bash
-# Export to CSV (format auto-detected from extension)
-ch export 'SELECT * FROM demo.events LIMIT 1000' --output events_sample.csv
-
-# Export to JSON
-ch export 'SELECT event_type, count() AS cnt FROM demo.events GROUP BY event_type' --output counts.json
+**Expected output:**
+```
+Cardinality: events  (n=1,000)
+┌────────────┬──────────────────────────┬───────────────┬──────────────┬────────────────────────────────────┐
+│ Column     │ Type                     │ Unique Values │ Cardinality %│ Verdict                            │
+├────────────┼──────────────────────────┼───────────────┼──────────────┼────────────────────────────────────┤
+│ event_id   │ UUID                     │ 1,000         │ 100.0%       │ very high — consider skip index    │
+│ user_id    │ UInt64                   │ 874           │ 87.4%        │ high                               │
+│ created_at │ DateTime64(3)            │ 1,000         │ 100.0%       │ very high — consider skip index    │
+│ date       │ Date                     │ 1             │ 0.1%         │ low — good for LowCardinality      │
+│ event_type │ LowCardinality(String)   │ 4             │ 0.4%         │ low — good for LowCardinality      │
+└────────────┴──────────────────────────┴───────────────┴──────────────┴────────────────────────────────────┘
 ```
 
 ---
 
-### Schema migrations (v0.2+)
+### `ch export` — Export data (v0.2+)
 
-Create a `migrations/` directory with numbered `.sql` files:
+```bash
+ch export 'SELECT event_type, count() AS cnt FROM demo.events GROUP BY event_type' --output counts.csv
+```
+
+**Expected output:**
+```
+✓ 4 rows → counts.csv
+```
+
+```bash
+ch export 'SELECT event_type, count() AS cnt FROM demo.events GROUP BY event_type' --output counts.json
+```
+
+**Expected output:**
+```
+✓ 4 rows → counts.json
+```
+
+**Upload to S3 (requires `pip install boto3`):**
+
+```bash
+ch export 'SELECT * FROM demo.events' --s3 s3://my-bucket/clickhawk/events.csv
+```
+
+**Expected output:**
+```
+✓ 1,000 rows → s3://my-bucket/clickhawk/events.csv
+```
+
+---
+
+### `ch kill` — Kill a running query (v0.3+)
+
+In **terminal 2**, start a slow query:
+
+```bash
+clickhouse client --query 'SELECT sleep(3)'
+```
+
+In **terminal 1**, find the query ID with `ch monitor`, then kill it:
+
+```bash
+ch kill 3a7f1c2b --yes
+```
+
+**Expected output:**
+```
+┌──────────────────────────────────────┬─────────┬───────────┬──────────────────────┐
+│ Query ID                             │ User    │ Elapsed(s)│ Query                │
+├──────────────────────────────────────┼─────────┼───────────┼──────────────────────┤
+│ 3a7f1c2b-...                         │ default │ 1.2       │ SELECT sleep(3)      │
+└──────────────────────────────────────┴─────────┴───────────┴──────────────────────┘
+✓ Kill signal sent to 1 query/queries.
+```
+
+---
+
+### `ch top` — Top queries by resource (v0.3+)
+
+```bash
+ch top --sort memory
+```
+
+**Expected output (live, refreshes every 2s):**
+```
+╭─────────────────────────────────────────────── ch top ────────────────────────────────────────────────╮
+│ Running: 1   Mem total: 45.0 MiB   Rows total: 1.00 K   Sort: Memory   Ctrl+C to exit                │
+│ ┌──────────┬─────────┬───────────┬───────────┬──────────┬────────┬─────────────────────────────────┐ │
+│ │ ID       │ User    │ Elapsed(s)│ Rows Read │ Memory   │ CPU(μs)│ Query                           │ │
+│ ├──────────┼─────────┼───────────┼───────────┼──────────┼────────┼─────────────────────────────────┤ │
+│ │ 3a7f1c2b │ default │ 1.4       │ 0         │ 45.0 MiB │ 12000  │ SELECT sleep(3)                 │ │
+│ └──────────┴─────────┴───────────┴───────────┴──────────┴────────┴─────────────────────────────────┘ │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+Press `Ctrl+C` to exit.
+
+---
+
+### `ch migrate` — Schema migrations (v0.2+)
+
+Create a migrations directory:
 
 ```bash
 mkdir migrations
 echo "CREATE TABLE demo.my_feature (id UInt64, val String) ENGINE = Log;" > migrations/001_my_feature.sql
 ```
 
-Then apply:
+Check status then apply:
 
 ```bash
-ch migrate status --dir migrations/   # see what's pending
-ch migrate run    --dir migrations/   # apply
+ch migrate status --dir migrations/
+```
+
+**Expected output:**
+```
+       Migration Status
+┌──────────────────────────┬───────────────┬────────────┐
+│ File                     │ Status        │ Applied At │
+├──────────────────────────┼───────────────┼────────────┤
+│ 001_my_feature.sql       │ ⏳ pending    │ —          │
+└──────────────────────────┴───────────────┴────────────┘
+```
+
+```bash
+ch migrate run --dir migrations/
+```
+
+**Expected output:**
+```
+  Applying 001_my_feature.sql ... ✓
+Applied 1 migration(s).
 ```
 
 ---

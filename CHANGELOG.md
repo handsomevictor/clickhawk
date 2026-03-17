@@ -8,6 +8,24 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 
 ---
 
+## [0.3.0] — 2026-03-17
+
+### Added
+- **`ch kill [query_id]`** — send a kill signal to one or more running queries; supports killing by query_id prefix or by `--user`; requires `--yes` to skip confirmation
+- **`ch top`** — live dashboard showing top queries sorted by `--sort elapsed|memory|rows|cpu`; includes a summary bar (total running, aggregate memory, aggregate rows); color-coding identical to `ch monitor`
+- **`ch export --s3 s3://bucket/key`** — upload query results directly to S3 using boto3 (reads AWS credentials from environment or `~/.aws/credentials`); supports CSV, JSON, and Parquet formats; requires `pip install boto3`
+
+### Technical
+- `kill.py` and `top.py` added as new command modules
+- `export.py` extended with `--s3` flag and `_export_s3()` helper
+- 8 new integration tests; 72 total passing
+
+### Planned
+- `ch top --filter <user>` — narrow live view to a specific user
+- `ch export --s3` streaming for very large result sets (chunked multipart upload)
+
+---
+
 ## [0.2.0] — 2026-03-17
 
 ### Added

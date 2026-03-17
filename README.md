@@ -12,6 +12,23 @@
 
 ---
 
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [TUTORIAL.md](TUTORIAL.md) | Local ClickHouse setup guide for macOS / Linux / Windows, including full config and troubleshooting |
+| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
+| [LESSONS_LEARNED.md](LESSONS_LEARNED.md) | Pitfalls encountered during development — useful for contributors |
+| [STRUCTURE.md](STRUCTURE.md) | Project layout and module responsibilities |
+| [examples/BASIC_QUERY.md](examples/BASIC_QUERY.md) | `ch query` usage examples |
+| [examples/PROFILING.md](examples/PROFILING.md) | `ch profile` — how to read metrics and diagnose slow queries |
+| [examples/MONITORING.md](examples/MONITORING.md) | `ch monitor` + `ch slowlog` — production incident workflow |
+| [examples/SCHEMA_EXPLORATION.md](examples/SCHEMA_EXPLORATION.md) | `ch schema` — table inspection and schema workflows |
+
+> All documents are available in English and Chinese (append `_CN` to the filename for the Chinese version, e.g. `TUTORIAL_CN.md`).
+
+---
+
 ## Why ClickHawk?
 
 The ClickHouse ecosystem has many tools, but none of them address the real pain points data engineers face in daily work:
@@ -92,7 +109,6 @@ export CH_DATABASE=default
 ch health
 ```
 
-Example output:
 ```
 ✓  ClickHouse  24.3.1.1
     Uptime   : 7 days, 3 hours
@@ -103,16 +119,9 @@ Example output:
 **Step 3: Start using**
 
 ```bash
-# Execute a query
 ch query "SELECT version()"
-
-# Profile a query
 ch profile "SELECT uniq(user_id) FROM events WHERE date >= today() - 7"
-
-# View the top slow queries from the past 24 hours
 ch slowlog --top 20
-
-# Live-monitor currently running queries
 ch monitor
 ```
 
@@ -126,7 +135,12 @@ ch monitor
 ch health
 ```
 
-Checks connectivity and displays the ClickHouse version, uptime, and the number of databases and tables.
+```
+✓  ClickHouse  24.3.1.1
+    Uptime   : 7 days, 3 hours
+    Databases: 5
+    Tables   : 42
+```
 
 ---
 
@@ -134,13 +148,25 @@ Checks connectivity and displays the ClickHouse version, uptime, and the number 
 
 ```bash
 ch query "SELECT database, count() FROM system.tables GROUP BY database"
+```
 
-# Specify output format
-ch query "SELECT * FROM my_table" --format json
-ch query "SELECT * FROM my_table" --format csv
+```
+┌──────────────────┬──────────┐
+│ database         │ count()  │
+├──────────────────┼──────────┤
+│ default          │       12 │
+│ system           │       73 │
+│ demo             │        5 │
+└──────────────────┴──────────┘
+3 rows  (0.021s)
+```
 
-# Limit the number of rows returned
-ch query "SELECT * FROM large_table" --limit 100
+```bash
+# JSON / CSV output for scripting
+ch query "SELECT database, count() FROM system.tables GROUP BY database" --format json
+
+# Limit rows
+ch query "SELECT * FROM events" --limit 5
 ```
 
 | Option | Short | Default | Description |
@@ -156,7 +182,6 @@ ch query "SELECT * FROM large_table" --limit 100
 ch profile "SELECT uniq(user_id) FROM events"
 ```
 
-Example output:
 ```
 ╔══════════════════════╦══════════════╗
 ║ Metric               ║ Value        ║
@@ -178,11 +203,17 @@ Extracts real execution statistics from `system.query_log`, including rows read,
 ### `ch slowlog` — Slow Query History
 
 ```bash
-# View the top 20 queries slower than 1s in the last 24 hours
 ch slowlog
-
-# Customize parameters
 ch slowlog --top 50 --threshold 500 --hours 48
+```
+
+```
+┌──────────────────────┬────────────┬───────────┬──────────────────────────────────────┐
+│ started              │ duration   │ user      │ query                                │
+├──────────────────────┼────────────┼───────────┼──────────────────────────────────────┤
+│ 2026-03-17 09:12:44  │ 4,821 ms   │ analyst   │ SELECT uniq(session_id) FROM events… │
+│ 2026-03-17 08:55:01  │ 3,102 ms   │ default   │ SELECT * FROM orders WHERE date >=…  │
+└──────────────────────┴────────────┴───────────┴──────────────────────────────────────┘
 ```
 
 | Option | Short | Default | Description |
@@ -196,24 +227,39 @@ ch slowlog --top 50 --threshold 500 --hours 48
 ### `ch schema show` — Inspect Table Structure
 
 ```bash
-ch schema show my_table
-
-# Specify a database
-ch schema show my_table --database analytics
+ch schema show events
+ch schema show events --database analytics
 ```
 
-Displays column names, types, default values, and comments.
+```
+┌─────────────┬─────────────────────────┬─────────┬─────────┐
+│ Column      │ Type                    │ Default │ Comment │
+├─────────────┼─────────────────────────┼─────────┼─────────┤
+│ event_id    │ UUID                    │         │         │
+│ user_id     │ UInt64                  │         │         │
+│ event_type  │ LowCardinality(String)  │         │         │
+│ date        │ Date                    │         │         │
+│ created_at  │ DateTime                │ now()   │         │
+└─────────────┴─────────────────────────┴─────────┴─────────┘
+```
 
 ---
 
 ### `ch schema tables` — List All Tables
 
 ```bash
-# List all user tables with size and row count
 ch schema tables
-
-# Filter by database
 ch schema tables --database analytics
+```
+
+```
+┌──────────────┬──────────────┬──────────────────┬──────────┬────────────┐
+│ database     │ table        │ engine           │ size     │ rows       │
+├──────────────┼──────────────┼──────────────────┼──────────┼────────────┤
+│ demo         │ events       │ MergeTree        │ 412.3 MB │ 12,847,291 │
+│ demo         │ orders       │ MergeTree        │  87.1 MB │  1,203,445 │
+│ demo         │ users        │ ReplacingMergeT… │   2.1 MB │     45,231 │
+└──────────────┴──────────────┴──────────────────┴──────────┴────────────┘
 ```
 
 ---
@@ -221,14 +267,21 @@ ch schema tables --database analytics
 ### `ch monitor` — Live Query Monitoring
 
 ```bash
-# Default refresh interval is 2 seconds
-ch monitor
-
-# Set a custom refresh interval
+ch monitor           # default 2s refresh
 ch monitor --interval 5
 ```
 
-Displays running queries from `system.processes` in real time. Queries running longer than 5 seconds are highlighted in yellow; those running longer than 30 seconds are shown in red. Press `Ctrl+C` to exit.
+```
+Running queries  (2026-03-17 09:15:30)
+┌──────────────────┬──────────┬───────────┬──────────────────────────────────────┐
+│ query_id         │ elapsed  │ user      │ query                                │
+├──────────────────┼──────────┼───────────┼──────────────────────────────────────┤
+│ 3a7f1c2b…        │  38.2 s  │ analyst   │ SELECT uniq(session_id) FROM events… │  ← red
+│ d91e4f07…        │   6.7 s  │ default   │ SELECT count() FROM orders WHERE …   │  ← yellow
+└──────────────────┴──────────┴───────────┴──────────────────────────────────────┘
+```
+
+Queries running longer than 5 seconds are highlighted in yellow; those running longer than 30 seconds are shown in red. Press `Ctrl+C` to exit.
 
 ---
 
@@ -236,15 +289,23 @@ Displays running queries from `system.processes` in real time. Queries running l
 
 ```bash
 ch explain "SELECT uniq(user_id) FROM events WHERE date >= today() - 7"
-
-# Show pipeline instead of plan
 ch explain "SELECT count() FROM events" --kind pipeline
-
-# Show raw syntax
 ch explain "select count() from events" --kind syntax
 ```
 
-Renders the EXPLAIN output as a color-coded tree — `ReadFromMergeTree` in cyan, `Filter` in yellow, `Aggregating` in magenta, and so on — making query plans readable at a glance.
+```
+Expression
+└── Aggregating
+    └── Filter
+        └── ReadFromMergeTree (demo.events)
+              Indexes:
+                PrimaryKey
+                  Condition: true
+                  Parts: 24/24
+                  Granules: 3721/3721
+```
+
+Renders the EXPLAIN output as a color-coded tree — `ReadFromMergeTree` in cyan, `Filter` in yellow, `Aggregating` in magenta — making query plans readable at a glance.
 
 ---
 
@@ -254,19 +315,39 @@ Renders the EXPLAIN output as a color-coded tree — `ReadFromMergeTree` in cyan
 ch schema diff events --host2 staging.internal --database analytics
 ```
 
-Compares a table's column list and types between two ClickHouse hosts. Added columns shown in green, removed in red, type changes in yellow.
+```
+Schema diff: demo.events  (prod vs staging)
+┌─────────────┬──────────────────────────┬──────────────────────────┐
+│ Column      │ prod                     │ staging                  │
+├─────────────┼──────────────────────────┼──────────────────────────┤
+│ session_id  │ String                   │ —           (removed)    │  ← red
+│ v2_flag     │ —           (missing)    │ UInt8                    │  ← green
+│ event_type  │ String                   │ LowCardinality(String)   │  ← yellow
+└─────────────┴──────────────────────────┴──────────────────────────┘
+```
 
 ---
 
 ### `ch migrate` — Schema Migration Management
 
 ```bash
-# Show migration status
 ch migrate status --dir migrations/
-
-# Apply pending migrations (preview first)
 ch migrate run --dir migrations/ --dry-run
 ch migrate run --dir migrations/
+```
+
+```
+Migration status  (dir: migrations/)
+┌───────────────────────────────┬──────────┬──────────────────────┐
+│ File                          │ Status   │ Applied at           │
+├───────────────────────────────┼──────────┼──────────────────────┤
+│ 001_create_events.sql         │ applied  │ 2026-03-15 10:22:01  │
+│ 002_add_session_id.sql        │ applied  │ 2026-03-16 08:45:33  │
+│ 003_add_v2_flag.sql           │ pending  │ —                    │
+└───────────────────────────────┴──────────┴──────────────────────┘
+
+✓ Applied 003_add_v2_flag.sql
+1 migration applied.
 ```
 
 Applies `.sql` files from a directory in alphabetical order. Tracks applied migrations in a `_clickhawk_migrations` table so runs are idempotent.
@@ -277,12 +358,20 @@ Applies `.sql` files from a directory in alphabetical order. Tracks applied migr
 
 ```bash
 ch check nulls events --database analytics
-
-# Sample 500k rows instead of the default 1M
 ch check nulls large_table --sample 500000
 ```
 
-Shows null count and null percentage for every column. Highlights columns above 10 % (yellow) and 50 % (red).
+```
+Null analysis: demo.events  (sample: 1,000,000 rows)
+┌─────────────┬────────────┬──────────┐
+│ Column      │ Null count │ Null %   │
+├─────────────┼────────────┼──────────┤
+│ event_id    │          0 │   0.00 % │
+│ user_id     │          0 │   0.00 % │
+│ session_id  │    142,301 │  14.23 % │  ← yellow
+│ referrer    │    603,812 │  60.38 % │  ← red
+└─────────────┴────────────┴──────────┘
+```
 
 ---
 
@@ -292,26 +381,95 @@ Shows null count and null percentage for every column. Highlights columns above 
 ch check cardinality events --database analytics
 ```
 
-Reports approximate cardinality for each column, sorted from highest to lowest. Columns with < 1 % cardinality are flagged as candidates for `LowCardinality`; columns above 95 % are flagged for potential skip indexes.
+```
+Cardinality: demo.events  (sample: 1,000,000 rows)
+┌─────────────┬─────────────┬───────────┬──────────────────────────────┐
+│ Column      │ Cardinality │ Ratio %   │ Verdict                      │
+├─────────────┼─────────────┼───────────┼──────────────────────────────┤
+│ user_id     │     891,204 │   89.12 % │ high — consider skip index   │
+│ session_id  │     712,448 │   71.24 % │ high                         │
+│ event_type  │          12 │    0.00 % │ low — consider LowCardinality│
+│ date        │         365 │    0.04 % │ low — consider LowCardinality│
+└─────────────┴─────────────┴───────────┴──────────────────────────────┘
+```
 
 ---
 
-### `ch export` — Export to CSV / JSON / Parquet
+### `ch export` — Export to CSV / JSON / Parquet / S3
 
 ```bash
-# Auto-detect format from file extension
 ch export "SELECT * FROM events WHERE date = today()" --output today.csv
 ch export "SELECT * FROM events" --output snapshot.parquet  # requires: pip install pyarrow
-
-# Export a whole table by name (bare name → SELECT *)
 ch export events --output events.json --limit 10000
+
+# Upload directly to S3 (requires: pip install boto3)
+ch export "SELECT * FROM events" --s3 s3://my-bucket/exports/events.csv
+```
+
+```
+✓ 12,847,291 rows → today.csv
+✓ 12,847,291 rows → s3://my-bucket/exports/events.csv
 ```
 
 | Option | Short | Default | Description |
 |--------|-------|---------|-------------|
-| `--output` | `-o` | required | Output file path |
+| `--output` | `-o` | — | Local output file |
+| `--s3` | | — | S3 destination URI (`s3://bucket/key`) |
 | `--format` | `-f` | auto | Format: `csv` / `json` / `parquet` |
 | `--limit` | `-l` | none | Max rows to export |
+
+S3 credentials are read from environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) or `~/.aws/credentials` via boto3.
+
+---
+
+### `ch kill` — Kill Running Queries
+
+```bash
+ch kill 3a7f1c2b
+ch kill --user analyst
+ch kill --user etl_user --yes
+```
+
+```
+Queries to kill:
+┌──────────────────┬──────────┬───────────┬──────────────────────────────────────┐
+│ query_id         │ elapsed  │ user      │ query                                │
+├──────────────────┼──────────┼───────────┼──────────────────────────────────────┤
+│ 3a7f1c2b…        │  38.2 s  │ analyst   │ SELECT uniq(session_id) FROM events… │
+└──────────────────┴──────────┴───────────┴──────────────────────────────────────┘
+Kill 1 query? [y/N]: y
+✓ Killed 3a7f1c2b…
+```
+
+---
+
+### `ch top` — Top Queries by Resource Usage
+
+```bash
+ch top
+ch top --sort memory
+ch top --sort rows --top 10 --interval 5
+```
+
+```
+ Running: 3   Memory: 234.5 MB   Rows read: 28,103,445
+
+┌──────────────────┬──────────┬───────────┬───────────────┬──────────────────────────────────────┐
+│ query_id         │ Elapsed  │ user      │ Memory        │ query                                │
+├──────────────────┼──────────┼───────────┼───────────────┼──────────────────────────────────────┤
+│ 3a7f1c2b…        │  38.2 s  │ analyst   │    87.5 MB    │ SELECT uniq(session_id) FROM events… │
+│ d91e4f07…        │   6.7 s  │ default   │    45.0 MB    │ SELECT count() FROM orders WHERE …   │
+└──────────────────┴──────────┴───────────┴───────────────┴──────────────────────────────────────┘
+```
+
+| `--sort` value | Description |
+|---------------|-------------|
+| `elapsed` | Time since query started (default) |
+| `memory` | Current memory usage |
+| `rows` | Rows read so far |
+| `cpu` | CPU time (microseconds) |
+
+Press `Ctrl+C` to exit.
 
 ---
 
@@ -375,26 +533,12 @@ pytest
 | **v0.2** | `ch migrate run/status` — file-based schema migration management | ✅ Released |
 | **v0.2** | `ch check nulls/cardinality` — data quality scanning | ✅ Released |
 | **v0.2** | `ch export` — export to CSV / JSON / Parquet | ✅ Released |
-| **v0.3** | `ch kill <query_id>` — terminate a running query from the terminal | Planned |
-| **v0.3** | `ch export --s3` — stream results directly to S3 | Planned |
-| **v0.3** | `ch top` — top queries by CPU / memory / rows read (like `htop` for ClickHouse) | Planned |
-
----
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [TUTORIAL.md](TUTORIAL.md) | Local ClickHouse setup guide for macOS / Linux / Windows, including full config and troubleshooting |
-| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
-| [LESSONS_LEARNED.md](LESSONS_LEARNED.md) | Pitfalls encountered during development — useful for contributors |
-| [STRUCTURE.md](STRUCTURE.md) | Project layout and module responsibilities |
-| [examples/BASIC_QUERY.md](examples/BASIC_QUERY.md) | `ch query` usage examples |
-| [examples/PROFILING.md](examples/PROFILING.md) | `ch profile` — how to read metrics and diagnose slow queries |
-| [examples/MONITORING.md](examples/MONITORING.md) | `ch monitor` + `ch slowlog` — production incident workflow |
-| [examples/SCHEMA_EXPLORATION.md](examples/SCHEMA_EXPLORATION.md) | `ch schema` — table inspection and schema workflows |
-
-> All documents are available in English and Chinese (append `_CN` to the filename for the Chinese version, e.g. `TUTORIAL_CN.md`).
+| **v0.3** | `ch kill <query_id>` — terminate a running query from the terminal | ✅ Released |
+| **v0.3** | `ch export --s3` — upload results directly to S3 | ✅ Released |
+| **v0.3** | `ch top` — top queries by CPU / memory / rows / elapsed (live dashboard) | ✅ Released |
+| **v0.4** | `ch top --filter <user>` — narrow live view to a specific user | Planned |
+| **v0.4** | `ch export --s3` chunked multipart upload for very large result sets | Planned |
+| **v0.4** | `ch profile --compare` — diff two query profiles side by side | Planned |
 
 ---
 
